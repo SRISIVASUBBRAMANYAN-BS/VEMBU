@@ -1,3 +1,5 @@
+/ scripts.js
+
 // Sample dataset with Aadhaar numbers
 const dataset = {
     "5982-1526-6691": true,
@@ -24,4 +26,4 @@ document.getElementById('generate-link-button').addEventListener('click', functi
         messageElement.innerText = "Incorrect Aadhaar Number";
         messageElement.style.color = "red";
     }
-});
+})
