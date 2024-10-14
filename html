@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VEMBU MedAI Emulator</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <div class="card-header">
+        <h1 class="card-title">VEMBU MedAI Emulator</h1>
+        <p class="card-description">AI-Powered Medical Prescription Analysis</p>
+      </div>
+      <div class="tabs">
+        <div class="tabs-list">
+          <button class="tab-button" data-target="upload">Upload Files</button>
+          <button class="tab-button" data-target="patient">Patient Details</button>
+        </div>
+        <div class="tabs-content" id="upload">
+          <form id="uploadForm">
+            <div class="form-group">
+              <label for="prescription">Upload Prescription</label>
+              <input type="file" id="prescription" required>
+            </div>
+            <div class="form-group">
+              <label for="photo">Patient Photo</label>
+              <input type="file" id="photo">
+              <button type="button" id="cameraButton">Capture</button>
+            </div>
+            <div class="camera-container">
+              <video id="video" autoplay></video>
+              <button id="captureButton">Take Photo</button>
+              <canvas id="canvas"></canvas>
+            </div>
+            <div id="ocrResult"></div>
+          </form>
+        </div>
+        <div class="tabs-content" id="patient">
+          <form id="patientForm">
+            <div class="form-group">
+              <label for="patientName">Name</label>
+              <input type="text" id="patientName" name="name">
+            </div>
+            <!-- Additional patient details form groups here -->
+            <button type="submit" id="submitButton">Analyze</button>
+          </form>
+          <div id="analysisResult"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>
