@@ -3,206 +3,520 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VEMBU Synthetic Data Generator</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+    <title>VEMBU MedAI Emulator</title>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.1.1/dist/tesseract.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.20/jspdf.plugin.autotable.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 0;
+            background: linear-gradient(to right, #60a5fa, #a78bfa);
             min-height: 100vh;
-            background: linear-gradient(to right, #9c27b0, #e91e63, #f44336);
             display: flex;
             justify-content: center;
             align-items: center;
         }
         .card {
-            background-color: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(10px);
+            background-color: white;
             border-radius: 8px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            padding: 2rem;
+            padding: 20px;
             max-width: 800px;
             width: 100%;
         }
         .card-title {
+            font-size: 24px;
+            font-weight: bold;
             text-align: center;
-            font-size: 2.5rem;
-            font-weight: bold;
-            background: linear-gradient(to right, #9c27b0, #e91e63);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 2rem;
+            margin-bottom: 20px;
+            color: #3b82f6;
         }
-        .input-group {
-            margin-bottom: 1rem;
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
         }
-        label {
+        @media (min-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        .label {
             display: block;
-            margin-bottom: 0.5rem;
+            margin-bottom: 5px;
             font-weight: bold;
         }
-        input, select {
+        .input, .select, .textarea {
             width: 100%;
-            padding: 0.5rem;
-            border: 1px solid #ccc;
+            padding: 8px;
+            border: 1px solid #d1d5db;
             border-radius: 4px;
+            font-size: 14px;
         }
-        button {
-            padding: 0.5rem 1rem;
+        .button {
+            background-color: #3b82f6;
+            color: white;
             border: none;
+            padding: 10px 15px;
             border-radius: 4px;
             cursor: pointer;
-            font-weight: bold;
-            transition: background-color 0.3s;
-        }
-        .btn-primary {
-            background-color: #2196f3;
-            color: white;
-        }
-        .btn-primary:hover {
-            background-color: #1976d2;
-        }
-        .btn-success {
-            background-color: #4caf50;
-            color: white;
-        }
-        .btn-success:hover {
-            background-color: #45a049;
-        }
-        .btn-danger {
-            background-color: #f44336;
-            color: white;
-        }
-        .btn-danger:hover {
-            background-color: #d32f2f;
-        }
-        .parameter-list {
-            margin-bottom: 1rem;
-        }
-        .parameter-item {
-            display: flex;
-            justify-content: space-between;
+            font-size: 14px;
+            display: inline-flex;
             align-items: center;
-            padding: 0.5rem;
-            background-color: #f0f0f0;
-            border-radius: 4px;
-            margin-bottom: 0.5rem;
         }
-        .button-group {
-            display: flex;
-            gap: 0.5rem;
-            justify-content: center;
+        .button:hover {
+            background-color: #2563eb;
+        }
+        .button:disabled {
+            background-color: #9ca3af;
+            cursor: not-allowed;
+        }
+        .icon {
+            width: 16px;
+            height: 16px;
+            margin-right: 8px;
+        }
+        .hidden {
+            display: none;
+        }
+        #webcam, #patientPhotoPreview, #prescriptionImagePreview {
+            max-width: 100%;
+            height: auto;
+            margin-top: 10px;
         }
     </style>
 </head>
 <body>
     <div class="card">
-        <h1 class="card-title">VEMBU Synthetic Data Generator</h1>
-        <div class="input-group">
-            <label for="numRecords">Number of Records</label>
-            <input type="number" id="numRecords" value="10" min="1">
-        </div>
-        <div class="input-group">
-            <h2>Parameters</h2>
-            <div id="parameterList" class="parameter-list"></div>
+        <h1 class="card-title">VEMBU MedAI Emulator</h1>
+        <div class="grid">
             <div>
-                <input type="text" id="newParamName" placeholder="Parameter name">
-                <select id="newParamType">
-                    <option value="number">Number</option>
-                    <option value="boolean">Yes/No</option>
-                    <option value="text">Text</option>
-                    <option value="gender">Male/Female</option>
-                </select>
-                <button onclick="addParameter()" class="btn-success">Add</button>
+                <label class="label" for="patientPhoto">Patient Photo</label>
+                <div>
+                    <button id="uploadPhotoBtn" class="button">
+                        <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                        Upload Photo
+                    </button>
+                    <button id="capturePhotoBtn" class="button">
+                        <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                        Capture Photo
+                    </button>
+                </div>
+                <input type="file" id="patientPhotoInput" accept="image/*" class="hidden">
+                <video id="webcam" class="hidden"></video>
+                <img id="patientPhotoPreview" class="hidden">
+                <button id="takeAgainBtn" class="button hidden">
+                    <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    Take Again
+                </button>
+            </div>
+            <div>
+                <label class="label" for="prescriptionImage">Prescription Image</label>
+                <button id="uploadPrescriptionBtn" class="button">
+                    <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                    Upload Prescription
+                </button>
+                <input type="file" id="prescriptionImageInput" accept="image/*" class="hidden">
+                <img id="prescriptionImagePreview" class="hidden">
             </div>
         </div>
-        <div class="button-group">
-            <button onclick="generateData()" class="btn-primary">Generate Data</button>
-            <button onclick="downloadExcel()" class="btn-primary">Download Excel</button>
-            <button onclick="downloadPDF()" class="btn-primary">Download PDF</button>
+        <div class="grid">
+            <input id="patientName" class="input" placeholder="Patient Name">
+            <input id="patientAge" class="input" type="number" placeholder="Age">
+            <select id="bloodGroup" class="select">
+                <option value="">Select Blood Group</option>
+                <option value="A+">A+</option>
+                <option value="A-">A-</option>
+                <option value="B+">B+</option>
+                <option value="B-">B-</option>
+                <option value="AB+">AB+</option>
+                <option value="AB-">AB-</option>
+                <option value="O+">O+</option>
+                <option value="O-">O-</option>
+            </select>
+            <select id="gender" class="select">
+                <option value="">Select Gender</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+            </select>
+            <input id="phone" class="input" placeholder="Phone Number">
+            <textarea id="address" class="textarea" placeholder="Address"></textarea>
         </div>
+        <div>
+            <label class="label" for="disease">Select Disease</label>
+            <select id="disease" class="select">
+                <option value="">Select Disease</option>
+                <option value="Hypertension">Hypertension</option>
+                <option value="Diabetes">Diabetes</option>
+                <option value="Asthma">Asthma</option>
+                <option value="Arthritis">Arthritis</option>
+                <SelectItem value="Heart Disease">Heart Disease</SelectItem>
+<SelectItem value="Cancer">Cancer</SelectItem>
+<SelectItem value="Stroke">Stroke</SelectItem>
+<SelectItem value="COPD">COPD</SelectItem>
+<SelectItem value="Alzheimer's Disease">Alzheimer's Disease</SelectItem>
+<SelectItem value="Parkinson's Disease">Parkinson's Disease</SelectItem>
+<SelectItem value="Epilepsy">Epilepsy</SelectItem>
+<SelectItem value="Multiple Sclerosis">Multiple Sclerosis</SelectItem>
+<SelectItem value="HIV/AIDS">HIV/AIDS</SelectItem>
+<SelectItem value="Tuberculosis">Tuberculosis</SelectItem>
+<SelectItem value="Hepatitis B">Hepatitis B</SelectItem>
+<SelectItem value="Hepatitis C">Hepatitis C</SelectItem>
+<SelectItem value="Kidney Disease">Kidney Disease</SelectItem>
+<SelectItem value="Liver Cirrhosis">Liver Cirrhosis</SelectItem>
+<SelectItem value="Chronic Kidney Disease">Chronic Kidney Disease</SelectItem>
+<SelectItem value="Anemia">Anemia</SelectItem>
+<SelectItem value="Gout">Gout</SelectItem>
+<SelectItem value="Psoriasis">Psoriasis</SelectItem>
+<SelectItem value="Eczema">Eczema</SelectItem>
+<SelectItem value="Osteoporosis">Osteoporosis</SelectItem>
+<SelectItem value="Celiac Disease">Celiac Disease</SelectItem>
+<SelectItem value="Crohn's Disease">Crohn's Disease</SelectItem>
+<SelectItem value="Ulcerative Colitis">Ulcerative Colitis</SelectItem>
+<SelectItem value="Irritable Bowel Syndrome">Irritable Bowel Syndrome</SelectItem>
+<SelectItem value="Gallstones">Gallstones</SelectItem>
+<SelectItem value="Appendicitis">Appendicitis</SelectItem>
+<SelectItem value="Diverticulitis">Diverticulitis</SelectItem>
+<SelectItem value="Endometriosis">Endometriosis</SelectItem>
+<SelectItem value="Polycystic Ovary Syndrome">Polycystic Ovary Syndrome</SelectItem>
+<SelectItem value="Menopause">Menopause</SelectItem>
+<SelectItem value="Infertility">Infertility</SelectItem>
+<SelectItem value="Prostate Cancer">Prostate Cancer</SelectItem>
+<SelectItem value="Breast Cancer">Breast Cancer</SelectItem>
+<SelectItem value="Lung Cancer">Lung Cancer</SelectItem>
+<SelectItem value="Colorectal Cancer">Colorectal Cancer</SelectItem>
+<SelectItem value="Skin Cancer">Skin Cancer</SelectItem>
+<SelectItem value="Leukemia">Leukemia</SelectItem>
+<SelectItem value="Lymphoma">Lymphoma</SelectItem>
+<SelectItem value="Melanoma">Melanoma</SelectItem>
+<SelectItem value="Thyroid Disease">Thyroid Disease</SelectItem>
+<SelectItem value="Hypothyroidism">Hypothyroidism</SelectItem>
+<SelectItem value="Hyperthyroidism">Hyperthyroidism</SelectItem>
+<SelectItem value="Sleep Apnea">Sleep Apnea</SelectItem>
+<SelectItem value="Acid Reflux">Acid Reflux</SelectItem>
+<SelectItem value="Peptic Ulcer Disease">Peptic Ulcer Disease</SelectItem>
+<SelectItem value="Pneumonia">Pneumonia</SelectItem>
+<SelectItem value="Bronchitis">Bronchitis</SelectItem>
+<SelectItem value="Sinusitis">Sinusitis</SelectItem>
+<SelectItem value="Tonsillitis">Tonsillitis</SelectItem>
+<SelectItem value="Allergies">Allergies</SelectItem>
+<SelectItem value="Astigmatism">Astigmatism</SelectItem>
+<SelectItem value="Cataracts">Cataracts</SelectItem>
+<SelectItem value="Glaucoma">Glaucoma</SelectItem>
+<SelectItem value="Macular Degeneration">Macular Degeneration</SelectItem>
+<SelectItem value="Hearing Loss">Hearing Loss</SelectItem>
+<SelectItem value="Tinnitus">Tinnitus</SelectItem>
+<SelectItem value="Anxiety Disorders">Anxiety Disorders</SelectItem>
+<SelectItem value="Depression">Depression</SelectItem>
+<SelectItem value="Bipolar Disorder">Bipolar Disorder</SelectItem>
+<SelectItem value="Schizophrenia">Schizophrenia</SelectItem>
+<SelectItem value="Post-Traumatic Stress Disorder">Post-Traumatic Stress Disorder</SelectItem>
+<SelectItem value="Obsessive-Compulsive Disorder">Obsessive-Compulsive Disorder</SelectItem>
+<SelectItem value="Attention Deficit Hyperactivity Disorder">Attention Deficit Hyperactivity Disorder</SelectItem>
+<SelectItem value="Autism Spectrum Disorder">Autism Spectrum Disorder</SelectItem>
+<SelectItem value="Eating Disorders">Eating Disorders</SelectItem>
+<SelectItem value="Substance Use Disorder">Substance Use Disorder</SelectItem>
+<SelectItem value="Sleep Disorders">Sleep Disorders</SelectItem>
+<SelectItem value="Personality Disorders">Personality Disorders</SelectItem>
+<SelectItem value="Dementia">Dementia</SelectItem>
+<SelectItem value="Neuropathy">Neuropathy</SelectItem>
+<SelectItem value="Fibromyalgia">Fibromyalgia</SelectItem>
+<SelectItem value="Chronic Fatigue Syndrome">Chronic Fatigue Syndrome</SelectItem>
+<SelectItem value="Post-viral Fatigue Syndrome">Post-viral Fatigue Syndrome</SelectItem>
+<SelectItem value="Scleroderma">Scleroderma</SelectItem>
+<SelectItem value="Lupus">Lupus</SelectItem>
+<SelectItem value="Rheumatoid Arthritis">Rheumatoid Arthritis</SelectItem>
+<SelectItem value="Systemic Sclerosis">Systemic Sclerosis</SelectItem>
+<SelectItem value="Sarcoidosis">Sarcoidosis</SelectItem>
+<SelectItem value="Raynaud's Disease">Raynaud's Disease</SelectItem>
+<SelectItem value="Sjögren's Syndrome">Sjögren's Syndrome</SelectItem>
+<SelectItem value="Vasculitis">Vasculitis</SelectItem>
+<SelectItem value="Aortic Aneurysm">Aortic Aneurysm</SelectItem>
+<SelectItem value="Arrhythmia">Arrhythmia</SelectItem>
+<SelectItem value="Heart Failure">Heart Failure</SelectItem>
+<SelectItem value="Cardiomyopathy">Cardiomyopathy</SelectItem>
+<SelectItem value="Peripheral Artery Disease">Peripheral Artery Disease</SelectItem>
+<SelectItem value="Deep Vein Thrombosis">Deep Vein Thrombosis</SelectItem>
+<SelectItem value="Pulmonary Embolism">Pulmonary Embolism</SelectItem>
+<SelectItem value="Varicose Veins">Varicose Veins</SelectItem>
+<SelectItem value="Gastroesophageal Reflux Disease">Gastroesophageal Reflux Disease</SelectItem>
+<SelectItem value="Cholecystitis">Cholecystitis</SelectItem>
+<SelectItem value="Pancreatitis">Pancreatitis</SelectItem>
+<SelectItem value="Peptic Ulcer">Peptic Ulcer</SelectItem>
+<SelectItem value="Diverticulosis">Diverticulosis</SelectItem>
+<SelectItem value="Hemorrhoids">Hemorrhoids</SelectItem>
+<SelectItem value="Constipation">Constipation</SelectItem>
+<SelectItem value="Diarrhea">Diarrhea</SelectItem>
+<SelectItem value="Vomiting">Vomiting</SelectItem>
+<SelectItem value="Nausea">Nausea</SelectItem>
+<SelectItem value="Fatty Liver Disease">Fatty Liver Disease</SelectItem>
+<SelectItem value="Hemochromatosis">Hemochromatosis</SelectItem>
+<SelectItem value="Wilson's Disease">Wilson's Disease</SelectItem>
+<SelectItem value="Vitamin D Deficiency">Vitamin D Deficiency</SelectItem>
+<SelectItem value="Anorexia Nervosa">Anorexia Nervosa</SelectItem>
+<SelectItem value="Bulimia Nervosa">Bulimia Nervosa</SelectItem>
+<SelectItem value="Hyperlipidemia">Hyperlipidemia</SelectItem>
+<SelectItem value="Hypercalcemia">Hypercalcemia</SelectItem>
+<SelectItem value="Hypocalcemia">Hypocalcemia</SelectItem>
+<SelectItem value="Cushing's Syndrome">Cushing's Syndrome</SelectItem>
+<SelectItem value="Addison's Disease">Addison's Disease</SelectItem>
+<SelectItem value="Pheochromocytoma">Pheochromocytoma</SelectItem>
+<SelectItem value="Hyperparathyroidism">Hyperparathyroidism</SelectItem>
+<SelectItem value="Hypoparathyroidism">Hypoparathyroidism</SelectItem>
+<SelectItem value="Polymyalgia Rheumatica">Polymyalgia Rheumatica</SelectItem>
+<SelectItem value="Temporal Arteritis">Temporal Arteritis</SelectItem>
+<SelectItem value="Chronic Sinusitis">Chronic Sinusitis</SelectItem>
+<SelectItem value="Fungal Infection">Fungal Infection</SelectItem>
+<SelectItem value="Bacterial Infection">Bacterial Infection</SelectItem>
+<SelectItem value="Viral Infection">Viral Infection</SelectItem>
+<SelectItem value="Parasite Infection">Parasite Infection</SelectItem>
+<SelectItem value="Meningitis">Meningitis</SelectItem>
+<SelectItem value="Encephalitis">Encephalitis
+            </select>
+        </div>
+        <button id="performAnalysisBtn" class="button" style="margin-top: 20px; width: 100%;">
+            <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            Perform Analysis
+        </button>
+        <button id="generatePDFBtn" class="button" style="margin-top: 10px; width: 100%;" disabled>
+            <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+            Generate PDF Report
+        </button>
     </div>
 
     <script>
-        let parameters = [];
+        let patientPhoto = null;
+        let prescriptionImage = null;
+        let extractedText = '';
+        let medications = [];
+        let analysisResult = '';
+        let isLoading = false;
+        let analysisPerformed = false;
 
-        function addParameter() {
-            const name = document.getElementById('newParamName').value;
-            const type = document.getElementById('newParamType').value;
-            if (name) {
-                parameters.push({ name, type });
-                updateParameterList();
-                document.getElementById('newParamName').value = '';
+        const patientPhotoInput = document.getElementById('patientPhotoInput');
+        const prescriptionImageInput = document.getElementById('prescriptionImageInput');
+        const webcam = document.getElementById('webcam');
+        const patientPhotoPreview = document.getElementById('patientPhotoPreview');
+        const prescriptionImagePreview = document.getElementById('prescriptionImagePreview');
+        const takeAgainBtn = document.getElementById('takeAgainBtn');
+        const performAnalysisBtn = document.getElementById('performAnalysisBtn');
+        const generatePDFBtn = document.getElementById('generatePDFBtn');
+
+        document.getElementById('uploadPhotoBtn').addEventListener('click', () => patientPhotoInput.click());
+        document.getElementById('capturePhotoBtn').addEventListener('click', startCamera);
+        document.getElementById('uploadPrescriptionBtn').addEventListener('click', () => prescriptionImageInput.click());
+        takeAgainBtn.addEventListener('click', handleTakeAgain);
+        performAnalysisBtn.addEventListener('click', performAnalysis);
+        generatePDFBtn.addEventListener('click', generatePDF);
+
+        patientPhotoInput.addEventListener('change', (e) => handleFileUpload(e, 'photo'));
+        prescriptionImageInput.addEventListener('change', (e) => handleFileUpload(e, 'prescription'));
+
+        function handleFileUpload(event, type) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    if (type === 'photo') {
+                        patientPhoto = reader.result;
+                        patientPhotoPreview.src = reader.result;
+                        patientPhotoPreview.classList.remove('hidden');
+                        takeAgainBtn.classList.remove('hidden');
+                    } else {
+                        prescriptionImage = reader.result;
+                        prescriptionImagePreview.src = reader.result;
+                        prescriptionImagePreview.classList.remove('hidden');
+                        performOCR(reader.result);
+                    }
+                };
+                reader.readAsDataURL(file);
             }
         }
 
-        function removeParameter(index) {
-            parameters.splice(index, 1);
-            updateParameterList();
-        }
-
-        function updateParameterList() {
-            const list = document.getElementById('parameterList');
-            list.innerHTML = '';
-            parameters.forEach((param, index) => {
-                const item = document.createElement('div');
-                item.className = 'parameter-item';
-                item.innerHTML = `
-                    <span>${param.name} (${param.type})</span>
-                    <button onclick="removeParameter(${index})" class="btn-danger">Remove</button>
-                `;
-                list.appendChild(item);
-            });
-        }
-
-        function generateRandomValue(type) {
-            switch (type) {
-                case 'number':
-                    return Math.floor(Math.random() * 100);
-                case 'boolean':
-                    return Math.random() > 0.5 ? 'Yes' : 'No';
-                case 'text':
-                    return Math.random().toString(36).substring(7);
-                case 'gender':
-                    return Math.random() > 0.5 ? 'Male' : 'Female';
-            }
-        }
-
-        function generateData() {
-            const numRecords = parseInt(document.getElementById('numRecords').value);
-            const data = [];
-            for (let i = 0; i < numRecords; i++) {
-                const record = {};
-                parameters.forEach(param => {
-                    record[param.name] = generateRandomValue(param.type);
+        function startCamera() {
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then((stream) => {
+                    webcam.srcObject = stream;
+                    webcam.classList.remove('hidden');
+                    webcam.play();
+                })
+                .catch((err) => {
+                    console.error("Error accessing the camera: ", err);
                 });
-                data.push(record);
+        }
+
+        function capturePhoto() {
+            const canvas = document.createElement('canvas');
+            canvas.width = webcam.videoWidth;
+            canvas.height = webcam.videoHeight;
+            canvas.getContext('2d').drawImage(webcam, 0, 0);
+            patientPhoto = canvas.toDataURL('image/jpeg');
+            patientPhotoPreview.src = patientPhoto;
+            patientPhotoPreview.classList.remove('hidden');
+            takeAgainBtn.classList.remove('hidden');
+            webcam.classList.add('hidden');
+            webcam.srcObject.getTracks().forEach(track => track.stop());
+        }
+
+        function handleTakeAgain() {
+            patientPhoto = null;
+            patientPhotoPreview.classList.add('hidden');
+            takeAgainBtn.classList.add('hidden');
+            startCamera();
+        }
+
+        async function performOCR(imageData) {
+            isLoading = true;
+            updateUI();
+            const worker = await Tesseract.createWorker();
+            await worker.loadLanguage('eng');
+            await worker.initialize('eng');
+            const { data: { text } } = await worker.recognize(imageData);
+            extractedText = text;
+            medications = extractMedications(text);
+            autoFillPatientDetails(text);
+            await worker.terminate();
+            isLoading = false;
+            updateUI();
+        }
+
+        function extractMedications(text) {
+            const lines = text.split('\n');
+            return lines.filter(line => /^[A-Z]/.test(line.trim()) && line.length > 5);
+        }
+
+        function autoFillPatientDetails(text) {
+            const nameMatch = text.match(/Name:\s*(.+)/i);
+            const ageMatch = text.match(/Age:\s*(\d+)/i);
+            const phoneMatch = text.match(/Phone:\s*(\d{10})/i);
+
+            if (nameMatch) document.getElementById('patientName').value = nameMatch[1];
+            if (ageMatch) document.getElementById('patientAge').value = ageMatch[1];
+            if (phoneMatch) document.getElementById('phone').value = phoneMatch[1];
+        }
+
+        function isFormComplete() {
+            const patientDetails = [
+                'patientName', 
+                'patientAge',
+                'bloodGroup',
+                'gender',
+                'phone',
+                'address',
+                'disease'
+            ];
+            return patientDetails.every(id => document.getElementById(id).value !== '') && medications.length > 0;
+        }
+
+        async function performAnalysis() {
+            if (!isFormComplete()) {
+                alert('Please fill in all patient details and ensure a prescription has been uploaded.');
+                return;
             }
-            return data;
+            isLoading = true;
+            updateUI();
+            analysisResult = await mockAIAnalysis(document.getElementById('disease').value, medications);
+            isLoading = false;
+            analysisPerformed = true;
+            updateUI();
         }
 
-        function downloadExcel() {
-            const data = generateData();
-            const ws = XLSX.utils.json_to_sheet(data);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, 'SyntheticData');
-            XLSX.writeFile(wb, 'vembu_synthetic_data.xlsx');
+        async function mockAIAnalysis(disease, medications) {
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            return `Based on the selected disease (${disease}) and the prescribed medications (${medications.join(', ')}), the patient's condition appears to be stable. Regular follow-ups are recommended. Please consult with the doctor for any changes in medication or dosage.`;
         }
 
-        function downloadPDF() {
-            const data = generateData();
+        function generatePDF() {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
-            doc.text('VEMBU Synthetic Data', 14, 15);
-            doc.autoTable({
-                head: [parameters.map(p => p.name)],
-                body: data.map(Object.values),
+            const pageWidth = doc.internal.pageSize.width;
+            const margin = 20;
+            const contentWidth = pageWidth - 2 * margin;
+
+            doc.setFontSize(20);
+            doc.setFont('helvetica', 'bold');
+            doc.text('VEMBU MedAI Analysis Report', pageWidth / 2, 20, { align: 'center' });
+            
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'normal');
+            
+            const addText = (text, y) => {
+                doc.text(text, margin, y);
+            };
+
+            const addWrappedText = (text, y) => {
+                const lines = doc.splitTextToSize(text, contentWidth);
+                doc.text(lines, margin, y);
+                return y + lines.length * 7;
+            };
+
+            let yPosition = 40;
+
+            addText(`Patient Name: ${document.getElementById('patientName').value}`, yPosition);
+            yPosition += 10;
+            addText(`Age: ${document.getElementById('patientAge').value}`, yPosition);
+            yPosition += 10;
+            addText(`Gender: ${document.getElementById('gender').value}`, yPosition);
+            yPosition += 10;
+            addText(`Blood Group: ${document.getElementById('bloodGroup').value}`, yPosition);
+            yPosition += 10;
+            addText(`Phone: ${document.getElementById('phone').value}`, yPosition);
+            yPosition += 10;
+            yPosition = addWrappedText(`Address: ${document.getElementById('address').value}`, yPosition);
+            yPosition += 15;
+
+            addText(`Selected Disease: ${document.getElementById('disease').value}`, yPosition);
+            yPosition += 15;
+
+            doc.setFont('helvetica', 'bold');
+            addText('Prescribed Medications:', yPosition);
+            doc.setFont('helvetica', 'normal');
+            yPosition += 7;
+            medications.forEach((med) => {
+                addText(`• ${med}`, yPosition);
+                yPosition += 7;
             });
-            doc.save('vembu_synthetic_data.pdf');
+            yPosition += 15;
+
+            doc.setFont('helvetica', 'bold');
+            addText('Analysis Result:', yPosition);
+            doc.setFont('helvetica', 'normal');
+            yPosition += 7;
+            yPosition = addWrappedText(analysisResult, yPosition);
+
+            if (patientPhoto) {
+                doc.addImage(patientPhoto, 'JPEG', pageWidth - 70, 30, 50, 50);
+                
+                doc.addPage();
+                doc.setFont('helvetica', 'bold');
+                addText('Patient Photo:', 20);
+                doc.addImage(patientPhoto, 'JPEG', margin, 30, contentWidth, contentWidth * 0.75);
+            }
+
+            if (prescriptionImage) {
+                doc.addPage();
+                doc.setFont('helvetica', 'bold');
+                addText('Prescription Image:', 20);
+                doc.addImage(prescriptionImage, 'JPEG', margin, 30, contentWidth, contentWidth * 0.75);
+            }
+            
+            doc.save('VEMBU_MedAI_Report.pdf');
         }
+
+        function updateUI() {
+            performAnalysisBtn.disabled = isLoading || !isFormComplete();
+            performAnalysisBtn.textContent = isLoading ? 'Analyzing...' : 'Perform Analysis';
+            generatePDFBtn.disabled = !analysisPerformed;
+            generatePDFBtn.style.backgroundColor = analysisPerformed ? '#10b981' : '#9ca3af';
+        }
+
+        // Add event listeners to form inputs for real-time UI updates
+        const formInputs = document.querySelectorAll('input, select, textarea');
+        formInputs.forEach(input => {
+            input.addEventListener('input', updateUI);
+        });
     </script>
 </body>
 </html>
